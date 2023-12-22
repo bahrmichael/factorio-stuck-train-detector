@@ -12,5 +12,11 @@ data:extend({
         setting_type = "runtime-global",
         minimum_value = 1,
         default_value = 2,
+    },
+    {
+        type = "bool-setting",
+        name = "stuck-train-detector-allow-renotify",
+        setting_type = "runtime-global",
+        default_value = true,
     }
 })

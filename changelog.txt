@@ -1,4 +1,10 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.0
+Date: 22. 12. 2023
+  Features:
+    - You can now disable notifications per rail signal. This should help with notifications from stackers. Click on the rail signal and disable the checkbox.
+    - You can now configure if notifications should appear again after the duration has elapsed again (e.g. every 2 minutes). Default is yes.
+---------------------------------------------------------------------------------------------------
 Version: 1.0.1
 Date: 22. 12. 2023
   Changes:
