@@ -1,0 +1,7 @@
+{
+  "name": "stuck-train-detector",
+  "title": "Stuck Train Detector",
+  "author": "gerpara",
+  "factorio_version": "1.1",
+  "dependencies": ["base >= 1.1"]
+  }
