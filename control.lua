@@ -50,7 +50,11 @@ script.on_nth_tick(get_frequency(), function ()
                 global.stuck_train_detector_timers[train.id] = game.tick
             else
                 if game.tick - global.stuck_train_detector_timers[train.id] >= get_time_until_stuck() then
-                    game.print("Train " .. train.id .. " is stuck: " .. train.front_rail.gps_tag)
+                    if train.front_stock.backer_name then
+                        game.print({"", {"stuck-train-detector-named-train-is-stuck", train.front_stock.backer_name}, train.front_rail.gps_tag})
+                    else
+                        game.print({"", {"stuck-train-detector-a-train-is-stuck"}, train.front_rail.gps_tag})
+                    end
                     global.stuck_train_detector_timers[train.id] = nil
                 end
             end
