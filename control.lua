@@ -14,7 +14,7 @@ script.on_init(function()
     global.stuck_train_detector_timers = {}
 end)
 
-script.on_load(function()
+script.on_event(defines.events.on_train_changed_state, function(event)
     if global.stuck_train_detector_trains == nil then
         global.stuck_train_detector_trains = {}
     end
@@ -24,9 +24,7 @@ script.on_load(function()
     if global.stuck_train_detector_timers == nil then
         global.stuck_train_detector_timers = {}
     end
-end)
 
-script.on_event(defines.events.on_train_changed_state, function(event)
     local train = event.train
 
     if should_be_checked(train.state) then
@@ -55,6 +53,13 @@ local function get_time_until_stuck()
 end
 
 script.on_nth_tick(get_frequency(), function ()
+    if global.stuck_train_detector_trains == nil then
+        global.stuck_train_detector_trains = {}
+    end
+    if global.stuck_train_detector_timers == nil then
+        global.stuck_train_detector_timers = {}
+    end
+
     for id, train in pairs(global.stuck_train_detector_trains) do
         if not train.valid then
             -- Train references become invalid if they are deconstructed, or changed (e.g. by adding a new wagon).
@@ -89,6 +94,10 @@ script.on_nth_tick(get_frequency(), function ()
 end)
 
 script.on_event(defines.events.on_gui_opened, function (event)
+    if global.stuck_train_detector_ignore_signals == nil then
+        global.stuck_train_detector_ignore_signals = {}
+    end
+
     if event.entity ~= nil and (event.entity.name == "rail-signal" or event.entity.name == "rail-chain-signal") then
 
         local player = game.players[event.player_index]
@@ -121,6 +130,9 @@ script.on_event(defines.events.on_gui_opened, function (event)
 end)
 
 script.on_event(defines.events.on_gui_checked_state_changed, function(event)
+    if global.stuck_train_detector_ignore_signals == nil then
+        global.stuck_train_detector_ignore_signals = {}
+    end
 
     local element = event.element
     if not string.find(element.name, "stuck_train_detector", 1, true) then
