@@ -26,13 +26,21 @@ script.on_event(defines.events.on_train_changed_state, function(event)
     end
 
     local train = event.train
+    assert(train ~= nil, "The train of a on_train_changed_state should never be nil.")
 
     if should_be_checked(train.state) then
-        local rail = train.path.rails[train.path.current]
-        local next_signal = rail.get_outbound_signals()[1]
-        
-        if next_signal ~= nil and global.stuck_train_detector_ignore_signals[next_signal.unit_number] == nil then
-            -- The train is waiting at a signal that is not opted out. Start monitoring it.
+        if train.has_path then
+            -- Train is waiting at a signal
+            local rail = train.path.rails[train.path.current]
+            assert(rail ~= nil, "A train's current path pointed to a nil value.")
+            local next_signal = rail.get_outbound_signals()[1]
+            
+            if next_signal ~= nil and global.stuck_train_detector_ignore_signals[next_signal.unit_number] == nil then
+                -- The train is waiting at a signal that is not opted out. Start monitoring it.
+                global.stuck_train_detector_trains[train.id] = train
+            end
+        else
+            -- Train has lost its path
             global.stuck_train_detector_trains[train.id] = train
         end
     elseif global.stuck_train_detector_trains[train.id] ~= nil then
