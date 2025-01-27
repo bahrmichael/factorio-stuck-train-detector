@@ -4,25 +4,25 @@ local TICKS_PER_SECOND = 60
 local TICKS_PER_MINUTE = 60 * TICKS_PER_SECOND
 
 local function should_be_checked(state)
-    return state == defines.train_state.path_lost
+    return state == defines.train_state.no_path
         or state == defines.train_state.wait_signal
 end
 
 script.on_init(function()
-    global.stuck_train_detector_trains = {}
-    global.stuck_train_detector_ignore_signals = {}
-    global.stuck_train_detector_timers = {}
+    storage.stuck_train_detector_trains = {}
+    storage.stuck_train_detector_ignore_signals = {}
+    storage.stuck_train_detector_timers = {}
 end)
 
 script.on_event(defines.events.on_train_changed_state, function(event)
-    if global.stuck_train_detector_trains == nil then
-        global.stuck_train_detector_trains = {}
+    if storage.stuck_train_detector_trains == nil then
+        storage.stuck_train_detector_trains = {}
     end
-    if global.stuck_train_detector_ignore_signals == nil then
-        global.stuck_train_detector_ignore_signals = {}
+    if storage.stuck_train_detector_ignore_signals == nil then
+        storage.stuck_train_detector_ignore_signals = {}
     end
-    if global.stuck_train_detector_timers == nil then
-        global.stuck_train_detector_timers = {}
+    if storage.stuck_train_detector_timers == nil then
+        storage.stuck_train_detector_timers = {}
     end
 
     local train = event.train
@@ -35,19 +35,19 @@ script.on_event(defines.events.on_train_changed_state, function(event)
             assert(rail ~= nil, "A train's current path pointed to a nil value.")
             local next_signal = rail.get_outbound_signals()[1]
             
-            if next_signal ~= nil and global.stuck_train_detector_ignore_signals[next_signal.unit_number] == nil then
+            if next_signal ~= nil and storage.stuck_train_detector_ignore_signals[next_signal.unit_number] == nil then
                 -- The train is waiting at a signal that is not opted out. Start monitoring it.
-                global.stuck_train_detector_trains[train.id] = train
+                storage.stuck_train_detector_trains[train.id] = train
             end
         else
             -- Train has lost its path
-            global.stuck_train_detector_trains[train.id] = train
+            storage.stuck_train_detector_trains[train.id] = train
         end
-    elseif global.stuck_train_detector_trains[train.id] ~= nil then
+    elseif storage.stuck_train_detector_trains[train.id] ~= nil then
         -- The train is not in a state that should be monitored, but it currently is in the list of trains being monitored. Remove it and delete the timer.
-        global.stuck_train_detector_trains[train.id] = nil
-        if global.stuck_train_detector_timers ~= nil then
-            global.stuck_train_detector_timers[train.id] = nil
+        storage.stuck_train_detector_trains[train.id] = nil
+        if storage.stuck_train_detector_timers ~= nil then
+            storage.stuck_train_detector_timers[train.id] = nil
         end
     end
 end)
@@ -61,25 +61,25 @@ local function get_time_until_stuck()
 end
 
 script.on_nth_tick(get_frequency(), function ()
-    if global.stuck_train_detector_trains == nil then
-        global.stuck_train_detector_trains = {}
+    if storage.stuck_train_detector_trains == nil then
+        storage.stuck_train_detector_trains = {}
     end
-    if global.stuck_train_detector_timers == nil then
-        global.stuck_train_detector_timers = {}
+    if storage.stuck_train_detector_timers == nil then
+        storage.stuck_train_detector_timers = {}
     end
 
-    for id, train in pairs(global.stuck_train_detector_trains) do
+    for id, train in pairs(storage.stuck_train_detector_trains) do
         if not train.valid then
             -- Train references become invalid if they are deconstructed, or changed (e.g. by adding a new wagon).
             -- We'll stop monitoring, and wait for the train to be waiting at a signal again.
-            global.stuck_train_detector_trains[id] = nil
-            global.stuck_train_detector_timers[id] = nil
+            storage.stuck_train_detector_trains[id] = nil
+            storage.stuck_train_detector_timers[id] = nil
         elseif should_be_checked(train.state) then
-            if global.stuck_train_detector_timers[train.id] == nil then
+            if storage.stuck_train_detector_timers[train.id] == nil then
                 -- If the train is not on a timer yet, then remember the first time we saw it waiting. We'll use this timestamp later to calculate how long it has been waiting.
-                global.stuck_train_detector_timers[train.id] = game.tick
+                storage.stuck_train_detector_timers[train.id] = game.tick
             else
-                if game.tick - global.stuck_train_detector_timers[train.id] >= get_time_until_stuck() then
+                if game.tick - storage.stuck_train_detector_timers[train.id] >= get_time_until_stuck() then
                     if train.front_stock.backer_name then
                         game.print({"", {"stuck-train-detector-named-train-is-stuck", train.front_stock.backer_name}, train.front_rail.gps_tag})
                     else
@@ -88,22 +88,22 @@ script.on_nth_tick(get_frequency(), function ()
                         game.print({"", {"stuck-train-detector-a-train-is-stuck"}, train.front_rail.gps_tag})
                     end
                     -- Delete the timer after printing the message. It can show up after another full duration, but should not trigger immediately again.
-                    global.stuck_train_detector_timers[train.id] = nil
+                    storage.stuck_train_detector_timers[train.id] = nil
                     if not (settings.global["stuck-train-detector-allow-renotify"] or {}).value then
                         -- If the player disabled re-notification, then stop tracking the train until its state changes.
-                        global.stuck_train_detector_trains[id] = nil
+                        storage.stuck_train_detector_trains[id] = nil
                     end
                 end
             end
-        elseif global.stuck_train_detector_timers[train.id] ~= nil then
-            global.stuck_train_detector_timers[train.id] = nil
+        elseif storage.stuck_train_detector_timers[train.id] ~= nil then
+            storage.stuck_train_detector_timers[train.id] = nil
         end
     end
 end)
 
 script.on_event(defines.events.on_gui_opened, function (event)
-    if global.stuck_train_detector_ignore_signals == nil then
-        global.stuck_train_detector_ignore_signals = {}
+    if storage.stuck_train_detector_ignore_signals == nil then
+        storage.stuck_train_detector_ignore_signals = {}
     end
 
     if event.entity ~= nil and (event.entity.name == "rail-signal" or event.entity.name == "rail-chain-signal") then
@@ -127,7 +127,7 @@ script.on_event(defines.events.on_gui_opened, function (event)
         signalGui.add{
             type = "checkbox", 
             caption = {"", {"stuck-train-detector-signal-setting", (settings.global["stuck-train-detector-check-minutes-until-considered-stuck"] or {}).value or 2}}, 
-            state = not global.stuck_train_detector_ignore_signals[unit_number], 
+            state = not storage.stuck_train_detector_ignore_signals[unit_number],
             enabled = true,
             name = "stuck_train_detector_signal_" .. unit_number,
             tags = {
@@ -138,8 +138,8 @@ script.on_event(defines.events.on_gui_opened, function (event)
 end)
 
 script.on_event(defines.events.on_gui_checked_state_changed, function(event)
-    if global.stuck_train_detector_ignore_signals == nil then
-        global.stuck_train_detector_ignore_signals = {}
+    if storage.stuck_train_detector_ignore_signals == nil then
+        storage.stuck_train_detector_ignore_signals = {}
     end
 
     local element = event.element
@@ -148,8 +148,8 @@ script.on_event(defines.events.on_gui_checked_state_changed, function(event)
     end
 
     if element.state == false then
-        global.stuck_train_detector_ignore_signals[element.tags.unit_number] = true
+        storage.stuck_train_detector_ignore_signals[element.tags.unit_number] = true
     else
-        global.stuck_train_detector_ignore_signals[element.tags.unit_number] = nil
+        storage.stuck_train_detector_ignore_signals[element.tags.unit_number] = nil
     end
 end)
