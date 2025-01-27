@@ -81,11 +81,11 @@ script.on_nth_tick(get_frequency(), function ()
             else
                 if game.tick - storage.stuck_train_detector_timers[train.id] >= get_time_until_stuck() then
                     if train.front_stock.backer_name then
-                        game.print({"", {"stuck-train-detector-named-train-is-stuck", train.front_stock.backer_name}, train.front_rail.gps_tag})
+                        game.print({"", {"stuck-train-detector-named-train-is-stuck", train.front_stock.backer_name}, train.front_stock.gps_tag})
                     else
                         -- The backer_name is an optional field on the LuaEntity, so we have default to a generic message if there is no name.
                         -- This can also happen if the train has cargo wagons in the front.
-                        game.print({"", {"stuck-train-detector-a-train-is-stuck"}, train.front_rail.gps_tag})
+                        game.print({"", {"stuck-train-detector-a-train-is-stuck"}, train.front_stock.gps_tag})
                     end
                     -- Delete the timer after printing the message. It can show up after another full duration, but should not trigger immediately again.
                     storage.stuck_train_detector_timers[train.id] = nil
@@ -118,9 +118,7 @@ script.on_event(defines.events.on_gui_opened, function (event)
             signalGui.destroy()
         end
 
-        local gui_type = event.entity.name == "rail-signal" and defines.relative_gui_type.rail_signal_gui or defines.relative_gui_type.rail_chain_signal_gui
-
-        local anchor = {gui = gui_type, name = event.entity.name, position = defines.relative_gui_position.right}
+        local anchor = {gui = defines.relative_gui_type.rail_signal_base_gui, name = event.entity.name, position = defines.relative_gui_position.right}
 
         signalGui = player.gui.relative.add{type = "frame", anchor = anchor, caption = "Stuck Train Detector", direction = "vertical", name = guiKey}
 
